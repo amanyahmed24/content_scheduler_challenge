@@ -25,7 +25,7 @@ class Post extends Model
 
     public function platforms()
     {
-        return $this->belongsToMany(Platform::class)
+        return $this->belongsToMany(Platform::class, 'post_platforms')
             ->withPivot('platform_status')
             ->withTimestamps();
     }

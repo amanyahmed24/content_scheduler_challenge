@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Platform;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PostController extends Controller
 {
@@ -59,10 +61,16 @@ class PostController extends Controller
             'user_id' => auth()->id(),
         ]);
 
+        $platforms = Platform::whereIn('id', $validated['platform_ids'])->get();
+
         $platformData = [];
-        foreach ($validated['platform_ids'] as $platformId) {
-            $platformData[$platformId] = ['platform_status' => 'pending'];
+
+        foreach ($platforms as $platform) {
+            $this->validateForPlatforms($request->content, [$platform]);
+
+            $platformData[$platform->id] = ['platform_status' => 'pending'];
         }
+
         $post->platforms()->attach($platformData);
 
         return response()->json([
@@ -115,5 +123,31 @@ class PostController extends Controller
         $post->delete();
 
         return response()->json(['message' => 'Post deleted successfully.']);
+    }
+
+
+    //validation function
+
+    public function validateForPlatforms($content, $platforms)
+    {
+        foreach ($platforms as $platform) {
+            switch ($platform->type) {
+                case 'twitter':
+                    if (strlen($content) > 280) {
+                        throw ValidationException::withMessages([
+                            'content' => 'Content exceeds Twitter character limit (280).',
+                        ]);
+                    }
+                    break;
+
+                case 'linkedin':
+                    if (strlen($content) > 1300) {
+                        throw ValidationException::withMessages([
+                            'content' => 'Content exceeds LinkedIn character limit (1300).',
+                        ]);
+                    }
+                    break;
+            }
+        }
     }
 }
