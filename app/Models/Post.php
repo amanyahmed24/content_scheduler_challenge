@@ -29,4 +29,14 @@ class Post extends Model
             ->withPivot('platform_status')
             ->withTimestamps();
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($post) {
+
+            if (auth()->check()) {
+                $post->user_id = auth()->id();
+            }
+        });
+    }
 }
